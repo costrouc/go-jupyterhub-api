@@ -8,5 +8,6 @@ services:
      - "--JupyterHub.authenticator_class=jupyterhub.auth.DummyAuthenticator"
      - "--JupyterHub.spawner_class=jupyterhub.spawner.SimpleLocalProcessSpawner"
      - "--DummyAuthenticator.password=password"
+     - "--Authenticator.admin_users=[\"username\"]"
     ports:
       - "8000:8000"
