@@ -10,7 +10,7 @@
         pythonPackages = pkgs.python3Packages;
     in {
       devShell.x86_64-linux = pkgs.mkShell {
-        buildInputs = [ pkgs.go pythonPackages.jupyterhub ];
+        buildInputs = [ pkgs.go pkgs.docker-compose ];
       };
   };
 }

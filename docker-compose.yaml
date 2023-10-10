@@ -1,0 +1,12 @@
+version: "3"
+
+services:
+  jupyterhub:
+    image: jupyterhub/jupyterhub
+    command:
+     - "jupyterhub"
+     - "--JupyterHub.authenticator_class=jupyterhub.auth.DummyAuthenticator"
+     - "--JupyterHub.spawner_class=jupyterhub.spawner.SimpleLocalProcessSpawner"
+     - "--DummyAuthenticator.password=password"
+    ports:
+      - "8000:8000"
