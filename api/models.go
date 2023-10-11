@@ -134,3 +134,44 @@ type JupyterHubCreateUserTokenBody struct {
 }
 
 type JupyterHubCreateUserTokenResponse JupyterHubToken
+
+type JupyterHubGetUserTokenResponse JupyterHubToken
+
+type JupyterHubListGroupsParams struct {
+	Offset int
+	Limit  int
+}
+
+func (r *JupyterHubListGroupsParams) Encode() string {
+	v := url.Values{}
+	if r.Offset != 0 {
+		v.Set("offset", fmt.Sprint(r.Offset))
+	}
+	if r.Limit != 0 {
+		v.Set("limit", fmt.Sprint(r.Limit))
+	}
+	return v.Encode()
+}
+
+type JupyterHubGroup struct {
+	Name       string      `json:"name"`
+	Users      []string    `json:"users"`
+	Properties interface{} `json:"properties"`
+	Roles      []string    `json:"roles"`
+}
+
+type JupyterHubListGroupsResponse []JupyterHubGroup
+
+type JupyterHubGetGroupResponse JupyterHubGroup
+
+type JupyterHubCreateGroupResponse JupyterHubGroup
+
+type JupyterHubAddGroupUsersBody struct {
+	Users []string `json:"users"`
+}
+
+type JupyterHubAddGroupUsersResponse JupyterHubGroup
+
+type JupyterHubRemoveGroupUsersBody struct {
+	Users []string `json:"users"`
+}

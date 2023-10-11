@@ -280,3 +280,117 @@ func CreateUserToken(username string, options *JupyterHubCreateUserTokenBody) (*
 	}
 	return &result, nil
 }
+
+func GetUserToken(username string, tokenId string) (*JupyterHubGetUserTokenResponse, error) {
+	data, err := jupyterHubRequest(http.MethodGet, fmt.Sprintf("hub/api/users/%s/tokens/%s", username, tokenId), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var result JupyterHubGetUserTokenResponse
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func DeleteUserToken(username string, tokenId string) error {
+	_, err := jupyterHubRequest(http.MethodDelete, fmt.Sprintf("hub/api/users/%s/tokens/%s", username, tokenId), nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func ListGroups(options *JupyterHubListGroupsParams) (*JupyterHubListGroupsResponse, error) {
+	url := "hub/api/groups"
+	if options != nil {
+		url = fmt.Sprintf("%s?%s", url, options.Encode())
+	}
+
+	data, err := jupyterHubRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var result JupyterHubListGroupsResponse
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func GetGroup(groupname string) (*JupyterHubGetGroupResponse, error) {
+	data, err := jupyterHubRequest(http.MethodGet, fmt.Sprintf("hub/api/groups/%s", groupname), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var result JupyterHubGetGroupResponse
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func CreateGroup(groupname string) (*JupyterHubCreateGroupResponse, error) {
+	data, err := jupyterHubRequest(http.MethodPost, fmt.Sprintf("hub/api/groups/%s", groupname), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var result JupyterHubCreateGroupResponse
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func DeleteGroup(groupname string) error {
+	_, err := jupyterHubRequest(http.MethodDelete, fmt.Sprintf("hub/api/groups/%s", groupname), nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func AddGroupUsers(groupname string, options *JupyterHubAddGroupUsersBody) (*JupyterHubAddGroupUsersResponse, error) {
+	body, err := json.Marshal(options)
+	if err != nil {
+		return nil, err
+	}
+	data, err := jupyterHubRequest(http.MethodPost, fmt.Sprintf("hub/api/groups/%s/users", groupname), body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result JupyterHubAddGroupUsersResponse
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func RemoveGroupUsers(groupname string, options *JupyterHubRemoveGroupUsersBody) error {
+	body, err := json.Marshal(options)
+	if err != nil {
+		return err
+	}
+	_, err = jupyterHubRequest(http.MethodDelete, fmt.Sprintf("hub/api/groups/%s/users", groupname), body)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func SetGroupProperties(groupname string, properties interface{}) error {
+	body, err := json.Marshal(properties)
+	if err != nil {
+		return err
+	}
+	_, err = jupyterHubRequest(http.MethodPut, fmt.Sprintf("hub/api/groups/%s/properties", groupname), body)
+	if err != nil {
+		return err
+	}
+	return nil
+}
