@@ -175,3 +175,18 @@ type JupyterHubAddGroupUsersResponse JupyterHubGroup
 type JupyterHubRemoveGroupUsersBody struct {
 	Users []string `json:"users"`
 }
+
+type JupyterHubService struct {
+	Name    string      `json:"name"`
+	Admin   bool        `json:"admin"`
+	Roles   []string    `json:"roles"`
+	Url     string      `json:"url"`
+	Prefix  string      `json:"prefix"`
+	Pid     int         `json:"pid"`
+	Command []string    `json:"command"`
+	Info    interface{} `json:"info"`
+}
+
+type JupyterHubListServicesResponse []JupyterHubService
+
+type JupyterHubGetServiceResponse JupyterHubService

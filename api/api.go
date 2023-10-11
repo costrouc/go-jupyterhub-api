@@ -394,3 +394,29 @@ func SetGroupProperties(groupname string, properties interface{}) error {
 	}
 	return nil
 }
+
+func ListServices() (*JupyterHubListServicesResponse, error) {
+	data, err := jupyterHubRequest(http.MethodGet, "hub/api/services", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var result JupyterHubListServicesResponse
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func GetService(servicename string) (*JupyterHubGetServiceResponse, error) {
+	data, err := jupyterHubRequest(http.MethodGet, fmt.Sprintf("hub/api/services/%s", servicename), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var result JupyterHubGetServiceResponse
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
