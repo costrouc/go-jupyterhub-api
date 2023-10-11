@@ -8,25 +8,33 @@ import (
 )
 
 func main() {
-	api.GetVersion()
-	api.GetInfo()
-	api.GetCurrentUser()
-	api.ListUsers(&api.JupyterHubListUsersParams{Limit: 10})
+	client, err := api.CreateClient(&api.ClientConfig{Token: "397d165abaab49c6b5dea2bbad19712e"})
+	if err != nil {
+		panic(err.Error())
+	}
+	client.GetVersion()
+	_, err = client.GetInfo()
+	if err != nil {
+		panic(err.Error())
+	}
+	client.GetCurrentUser()
+	client.ListUsers(&api.ListUsersParams{Limit: 10})
 
 	randomUsername1 := fmt.Sprintf("test-%s", utils.RandSeq(16))
-	api.CreateUsers(&api.JupyterHubCreateUsersBody{Admin: true, Usernames: []string{randomUsername1}})
-	api.GetUser(randomUsername1)
+	client.CreateUsers(&api.CreateUsersBody{Admin: true, Usernames: []string{randomUsername1}})
+	client.GetUser(randomUsername1)
 
 	randomUsername2 := fmt.Sprintf("test-%s", utils.RandSeq(16))
 	randomUsername3 := fmt.Sprintf("test-%s", utils.RandSeq(16))
-	api.CreateUser(randomUsername2)
-	api.UpdateUser(randomUsername2, &api.JupyterHubUpdateUserBody{Name: randomUsername3})
+	client.CreateUser(randomUsername2)
+	client.UpdateUser(randomUsername2, &api.UpdateUserBody{Name: randomUsername3})
 
-	api.DeleteUser(randomUsername1)
-	api.DeleteUser(randomUsername3)
+	client.DeleteUser(randomUsername1)
+	client.DeleteUser(randomUsername3)
 
-	api.NotifyUserActivity("username", &api.JupyterHubUserActivityBody{LastActivity: "2023-10-10 01:10:20"})
-	api.ListUserTokens("username")
-	api.CreateUserToken("username", &api.JupyterHubCreateUserTokenBody{ExpiresIn: 100, Note: "A note"})
-	api.ListGroups(&api.JupyterHubListGroupsParams{})
+	client.NotifyUserActivity("username", &api.UserActivityBody{LastActivity: "2023-10-10 01:10:20"})
+	client.ListUserTokens("username")
+	client.CreateUserToken("username", &api.CreateUserTokenBody{ExpiresIn: 100, Note: "A note"})
+	client.ListGroups(&api.ListGroupsParams{})
+	client.GetProxyTable(&api.GetProxyTableParams{})
 }
