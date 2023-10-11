@@ -195,3 +195,88 @@ func UpdateUser(username string, options *JupyterHubUpdateUserBody) (*JupyterHub
 	}
 	return &result, nil
 }
+
+func NotifyUserActivity(username string, options *JupyterHubUserActivityBody) error {
+	body, err := json.Marshal(options)
+	if err != nil {
+		return err
+	}
+
+	_, err = jupyterHubRequest(http.MethodPost, fmt.Sprintf("hub/api/users/%s/activity", username), body)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func StartUserServer(username string, options interface{}) error {
+	body, err := json.Marshal(options)
+	if err != nil {
+		return err
+	}
+
+	_, err = jupyterHubRequest(http.MethodPost, fmt.Sprintf("hub/api/users/%s/server", username), body)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func StopUserServer(username string) error {
+	_, err := jupyterHubRequest(http.MethodDelete, fmt.Sprintf("hub/api/users/%s/server", username), nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func StartUserNamedServer(username string, serverName string, options interface{}) error {
+	body, err := json.Marshal(options)
+	if err != nil {
+		return err
+	}
+
+	_, err = jupyterHubRequest(http.MethodPost, fmt.Sprintf("hub/api/users/%s/servers/%s", username, serverName), body)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func StopUserNamedServer(username string, serverName string) error {
+	_, err := jupyterHubRequest(http.MethodDelete, fmt.Sprintf("hub/api/users/%s/servers/%s", username, serverName), nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func ListUserTokens(username string) (*JupyterHubListTokenResponse, error) {
+	data, err := jupyterHubRequest(http.MethodGet, fmt.Sprintf("hub/api/users/%s/tokens", username), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var result JupyterHubListTokenResponse
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func CreateUserToken(username string, options *JupyterHubCreateUserTokenBody) (*JupyterHubCreateUserTokenResponse, error) {
+	body, err := json.Marshal(options)
+	if err != nil {
+		return nil, err
+	}
+	data, err := jupyterHubRequest(http.MethodPost, fmt.Sprintf("hub/api/users/%s/tokens", username), body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result JupyterHubCreateUserTokenResponse
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}

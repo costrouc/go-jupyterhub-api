@@ -104,3 +104,33 @@ type JupyterHubUpdateUserBody struct {
 }
 
 type JupyterHubUpdateUserResponse JupyterHubUser
+
+type JupyterHubUserActivityBody struct {
+	LastActivity string            `json:"last_activity"`
+	Servers      map[string]string `json:"servers"`
+}
+
+type JupyterHubToken struct {
+	Token        string   `json:"token"`
+	Id           string   `json:"id"`
+	User         string   `json:"user"`
+	Service      string   `json:"service"`
+	Roles        []string `json:"roles"`
+	Scopes       []string `json:"scopes"`
+	Note         string   `json:"note"`
+	Created      string   `json:"created"`
+	ExpiresAt    string   `json:"expires_at"`
+	LastActivity string   `json:"last_activity"`
+	SessionId    string   `json:"session_id"`
+}
+
+type JupyterHubListTokenResponse []JupyterHubToken
+
+type JupyterHubCreateUserTokenBody struct {
+	ExpiresIn int      `json:"expires_in"`
+	Note      string   `json:"note"`
+	Roles     []string `json:"roles"`
+	Scopes    []string `json:"scopes"`
+}
+
+type JupyterHubCreateUserTokenResponse JupyterHubToken

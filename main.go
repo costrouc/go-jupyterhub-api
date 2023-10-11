@@ -24,4 +24,8 @@ func main() {
 
 	api.DeleteUser(randomUsername1)
 	api.DeleteUser(randomUsername3)
+
+	api.NotifyUserActivity("username", &api.JupyterHubUserActivityBody{LastActivity: "2023-10-10 01:10:20"})
+	api.ListUserTokens("username")
+	api.CreateUserToken("username", &api.JupyterHubCreateUserTokenBody{ExpiresIn: 100, Note: "A note"})
 }
