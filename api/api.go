@@ -58,7 +58,7 @@ func jupyterHubRequest(method string, path string, requestBody []byte) ([]byte, 
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode/100 != 2 {
 		return nil, fmt.Errorf("response returned status code of %d instead of 200", resp.StatusCode)
 	}
 
@@ -178,6 +178,20 @@ func DeleteUser(username string) error {
 	return nil
 }
 
-func UpdateUser(username string, options *JupyterHubUpdateUserBody) {
+func UpdateUser(username string, options *JupyterHubUpdateUserBody) (*JupyterHubUpdateUserResponse, error) {
+	body, err := json.Marshal(options)
+	if err != nil {
+		return nil, err
+	}
 
+	data, err := jupyterHubRequest(http.MethodPatch, fmt.Sprintf("hub/api/users/%s", username), body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result JupyterHubUpdateUserResponse
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
 }

@@ -18,8 +18,10 @@ func main() {
 	api.GetUser(randomUsername1)
 
 	randomUsername2 := fmt.Sprintf("test-%s", utils.RandSeq(16))
+	randomUsername3 := fmt.Sprintf("test-%s", utils.RandSeq(16))
 	api.CreateUser(randomUsername2)
+	api.UpdateUser(randomUsername2, &api.JupyterHubUpdateUserBody{Name: randomUsername3})
 
 	api.DeleteUser(randomUsername1)
-	api.DeleteUser(randomUsername2)
+	api.DeleteUser(randomUsername3)
 }

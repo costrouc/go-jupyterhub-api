@@ -100,5 +100,7 @@ type JupyterHubCreateUserResponse JupyterHubUser
 
 type JupyterHubUpdateUserBody struct {
 	Name  string `json:"name"`
-	Admin string `json:"admin"`
+	Admin bool   `json:"admin"`
 }
+
+type JupyterHubUpdateUserResponse JupyterHubUser
