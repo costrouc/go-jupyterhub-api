@@ -22,6 +22,7 @@ type ClientConfig struct {
 	OAuthScopes              []string
 	OAuthAccessScopes        []string
 	OAuthClientAllowedScopes []string
+	ClientId                 string
 }
 
 type VersionResponse struct {

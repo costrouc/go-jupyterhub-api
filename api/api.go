@@ -21,6 +21,7 @@ func CreateClient(config *ClientConfig) (*ClientConfig, error) {
 		OAuthScopes:              []string{},
 		OAuthAccessScopes:        []string{},
 		OAuthClientAllowedScopes: []string{},
+		ClientId:                 "",
 	}
 
 	if config.ApiToken != "" {
@@ -109,6 +110,12 @@ func CreateClient(config *ClientConfig) (*ClientConfig, error) {
 			clientConfig.OAuthClientAllowedScopes = []string{}
 		}
 
+	}
+
+	if config.ClientId != "" {
+		clientConfig.ClientId = config.ClientId
+	} else {
+		clientConfig.ClientId = os.Getenv("JUPYTERHUB_CLIENT_ID")
 	}
 
 	return &clientConfig, nil
@@ -554,10 +561,12 @@ func (c *ClientConfig) ValidateToken(token string) error {
 }
 
 func (c *ClientConfig) GetOAuth2Endpoint(options *GetOAuth2EndpointParams) (string, error) {
-	if options.ClientId == "" && c.ServiceName != "" {
-		options.ClientId = c.ServiceName
-	} else {
-		return "", errors.New("ClientId not set via options or environment variable JUPYTERHUB_SERVICE_NAME")
+	if options.ClientId == "" && c.ClientId != "" {
+		options.ClientId = c.ClientId
+	} else if options.ClientId == "" && c.ServiceName != "" {
+		options.ClientId = fmt.Sprintf("service-%s", c.ServiceName)
+	} else if options.ClientId == "" {
+		return "", errors.New("ClientId not set via options or environment variable JUPYTERHUB_CLIENT_ID or JUPYTERHUB_SERVICE_NAME")
 	}
 
 	if options.ResponseType == "" {
