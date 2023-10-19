@@ -2,7 +2,6 @@ package api
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,80 +12,116 @@ import (
 
 func CreateClient(config *ClientConfig) (*ClientConfig, error) {
 	clientConfig := ClientConfig{
-		Host:     "localhost:8000",
-		Prefix:   "/",
-		Protocol: "http",
-		Token:    "",
-		Username: "",
-		Password: "",
+		ApiToken:                 "",
+		ServiceName:              "",
+		ApiURL:                   "http://localhost:8000/hub/api",
+		BaseURL:                  "/",
+		ServicePrefix:            "",
+		ServiceURL:               "",
+		OAuthScopes:              []string{},
+		OAuthAccessScopes:        []string{},
+		OAuthClientAllowedScopes: []string{},
 	}
 
-	if config.Host != "" {
-		clientConfig.Host = config.Host
-	}
-
-	if config.Prefix != "" {
-		clientConfig.Prefix = config.Prefix
-	}
-
-	if config.Protocol != "" {
-		clientConfig.Protocol = config.Protocol
-	}
-
-	if config.Token != "" {
-		clientConfig.Token = config.Token
+	if config.ApiToken != "" {
+		clientConfig.ApiToken = config.ApiToken
 	} else {
-		clientConfig.Token, _ = os.LookupEnv("JUPYTERHUB_TOKEN")
-	}
-
-	if config.Username != "" {
-		clientConfig.Username = config.Username
-	} else {
-		username, ok := os.LookupEnv("JUPYTERHUB_USERNAME")
-		if !ok && clientConfig.Token == "" {
-			return nil, errors.New("environment variable JUPYTERHUB_TOKEN and JUPYTERHUB_USERNAME not defined")
+		apiToken, ok := os.LookupEnv("JUPYTERHUB_API_TOKEN")
+		if !ok {
+			return nil, errors.New("api token not defined can be set via JUPYTERHUB_API_TOKEN")
 		}
-		clientConfig.Username = username
+		clientConfig.ApiToken = apiToken
 	}
 
-	if config.Password != "" {
-		clientConfig.Password = config.Password
+	if config.ServiceName != "" {
+		clientConfig.ServiceName = config.ServiceName
 	} else {
-		password, ok := os.LookupEnv("JUPYTERHUB_PASSWORD")
-		if !ok && clientConfig.Token == "" {
-			return nil, errors.New("environment variable JUPYTERHUB_TOKEN and JUPYTERHUB_PASSWORD not defined")
+		clientConfig.ServiceName = os.Getenv("JUPYTERHUB_SERVICE_NAME")
+	}
+
+	if config.ApiURL != "" {
+		clientConfig.ApiURL = config.ApiURL
+	} else {
+		apiURL, ok := os.LookupEnv("JUPYTERHUB_API_URL")
+		if ok {
+			clientConfig.ApiURL = apiURL
 		}
-		clientConfig.Password = password
+	}
+
+	if config.BaseURL != "" {
+		clientConfig.BaseURL = config.BaseURL
+	} else {
+		clientConfig.BaseURL = os.Getenv("JUPYTERHUB_BASE_URL")
+	}
+
+	if config.ServicePrefix != "" {
+		clientConfig.ServicePrefix = config.ServicePrefix
+	} else {
+		clientConfig.ServicePrefix = os.Getenv("JUPYTERHUB_SERVICE_PREFIX")
+	}
+
+	if config.ServiceURL != "" {
+		clientConfig.ServiceURL = config.ServiceURL
+	} else {
+		clientConfig.ServiceURL = os.Getenv("JUPYTERHUB_SERVICE_URL")
+	}
+
+	if len(config.OAuthScopes) != 0 {
+		clientConfig.OAuthScopes = config.OAuthScopes
+	} else {
+		OAuthScopesString, ok := os.LookupEnv("JUPYTERHUB_OAUTH_SCOPES")
+		if ok {
+			err := json.Unmarshal([]byte(OAuthScopesString), &clientConfig.OAuthScopes)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			clientConfig.OAuthScopes = []string{}
+		}
+
+	}
+
+	if len(config.OAuthAccessScopes) != 0 {
+		clientConfig.OAuthAccessScopes = config.OAuthAccessScopes
+	} else {
+		OAuthAccessScopesString, ok := os.LookupEnv("JUPYTERHUB_OAUTH_ACCESS_SCOPES")
+		if ok {
+			err := json.Unmarshal([]byte(OAuthAccessScopesString), &clientConfig.OAuthAccessScopes)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			clientConfig.OAuthAccessScopes = []string{}
+		}
+
+	}
+
+	if len(config.OAuthScopes) != 0 {
+		clientConfig.OAuthClientAllowedScopes = config.OAuthClientAllowedScopes
+	} else {
+		OAuthClientAllowedScopesString, ok := os.LookupEnv("JUPYTERHUB_OAUTH_CLIENT_ALLOWED_SCOPES")
+		if ok {
+			err := json.Unmarshal([]byte(OAuthClientAllowedScopesString), &clientConfig.OAuthClientAllowedScopes)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			clientConfig.OAuthClientAllowedScopes = []string{}
+		}
+
 	}
 
 	return &clientConfig, nil
 }
 
-func (c *ClientConfig) BaseURL() string {
-	return fmt.Sprintf("%s://%s%s", c.Protocol, c.Host, c.Prefix)
-}
-
-func basicAuth(username, password string) string {
-	auth := username + ":" + password
-	return base64.StdEncoding.EncodeToString([]byte(auth))
-}
-
-func (c *ClientConfig) setAuthHeader(request *http.Request) {
-	if c.Token != "" {
-		request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.Token))
-	} else {
-		request.Header.Set("Authorization", fmt.Sprintf("Basic %s", basicAuth(c.Username, c.Password)))
-	}
-}
-
 func (c *ClientConfig) Request(method string, path string, requestBody []byte) ([]byte, error) {
-	url := fmt.Sprintf("%s/%s", c.BaseURL(), path)
+	url := fmt.Sprintf("%s/%s", c.ApiURL, path)
 	client := &http.Client{}
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(requestBody))
 	if err != nil {
 		return nil, err
 	}
-	c.setAuthHeader(req)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.ApiToken))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := client.Do(req)
 	if err != nil {
@@ -106,7 +141,7 @@ func (c *ClientConfig) Request(method string, path string, requestBody []byte) (
 }
 
 func (c *ClientConfig) GetInfo() (*InfoResponse, error) {
-	data, err := c.Request(http.MethodGet, "hub/api/info", nil)
+	data, err := c.Request(http.MethodGet, "info", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +154,7 @@ func (c *ClientConfig) GetInfo() (*InfoResponse, error) {
 }
 
 func (c *ClientConfig) GetVersion() (*VersionResponse, error) {
-	data, err := c.Request(http.MethodGet, "hub/api/", nil)
+	data, err := c.Request(http.MethodGet, "", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +167,7 @@ func (c *ClientConfig) GetVersion() (*VersionResponse, error) {
 }
 
 func (c *ClientConfig) GetCurrentUser() (*CurrentUserResponse, error) {
-	data, err := c.Request(http.MethodGet, "hub/api/user", nil)
+	data, err := c.Request(http.MethodGet, "user", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +180,7 @@ func (c *ClientConfig) GetCurrentUser() (*CurrentUserResponse, error) {
 }
 
 func (c *ClientConfig) ListUsers(options *ListUsersParams) (*ListUsersResponse, error) {
-	url := "hub/api/users"
+	url := "users"
 	if options != nil {
 		url = fmt.Sprintf("%s?%s", url, options.Encode())
 	}
@@ -167,7 +202,7 @@ func (c *ClientConfig) CreateUsers(options *CreateUsersBody) (*ListUsersResponse
 	if err != nil {
 		return nil, err
 	}
-	data, err := c.Request(http.MethodPost, "hub/api/users", body)
+	data, err := c.Request(http.MethodPost, "users", body)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +215,7 @@ func (c *ClientConfig) CreateUsers(options *CreateUsersBody) (*ListUsersResponse
 }
 
 func (c *ClientConfig) GetUser(username string) (*GetUserResponse, error) {
-	data, err := c.Request(http.MethodGet, fmt.Sprintf("hub/api/users/%s", username), nil)
+	data, err := c.Request(http.MethodGet, fmt.Sprintf("users/%s", username), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +228,7 @@ func (c *ClientConfig) GetUser(username string) (*GetUserResponse, error) {
 }
 
 func (c *ClientConfig) CreateUser(username string) (*CreateUserResponse, error) {
-	data, err := c.Request(http.MethodPost, fmt.Sprintf("hub/api/users/%s", username), nil)
+	data, err := c.Request(http.MethodPost, fmt.Sprintf("users/%s", username), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +241,7 @@ func (c *ClientConfig) CreateUser(username string) (*CreateUserResponse, error) 
 }
 
 func (c *ClientConfig) DeleteUser(username string) error {
-	_, err := c.Request(http.MethodDelete, fmt.Sprintf("hub/api/users/%s", username), nil)
+	_, err := c.Request(http.MethodDelete, fmt.Sprintf("users/%s", username), nil)
 	if err != nil {
 		return err
 	}
@@ -219,7 +254,7 @@ func (c *ClientConfig) UpdateUser(username string, options *UpdateUserBody) (*Up
 		return nil, err
 	}
 
-	data, err := c.Request(http.MethodPatch, fmt.Sprintf("hub/api/users/%s", username), body)
+	data, err := c.Request(http.MethodPatch, fmt.Sprintf("users/%s", username), body)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +272,7 @@ func (c *ClientConfig) NotifyUserActivity(username string, options *UserActivity
 		return err
 	}
 
-	_, err = c.Request(http.MethodPost, fmt.Sprintf("hub/api/users/%s/activity", username), body)
+	_, err = c.Request(http.MethodPost, fmt.Sprintf("users/%s/activity", username), body)
 	if err != nil {
 		return err
 	}
@@ -250,7 +285,7 @@ func (c *ClientConfig) StartUserServer(username string, options interface{}) err
 		return err
 	}
 
-	_, err = c.Request(http.MethodPost, fmt.Sprintf("hub/api/users/%s/server", username), body)
+	_, err = c.Request(http.MethodPost, fmt.Sprintf("users/%s/server", username), body)
 	if err != nil {
 		return err
 	}
@@ -258,7 +293,7 @@ func (c *ClientConfig) StartUserServer(username string, options interface{}) err
 }
 
 func (c *ClientConfig) StopUserServer(username string) error {
-	_, err := c.Request(http.MethodDelete, fmt.Sprintf("hub/api/users/%s/server", username), nil)
+	_, err := c.Request(http.MethodDelete, fmt.Sprintf("users/%s/server", username), nil)
 	if err != nil {
 		return err
 	}
@@ -271,7 +306,7 @@ func (c *ClientConfig) StartUserNamedServer(username string, serverName string, 
 		return err
 	}
 
-	_, err = c.Request(http.MethodPost, fmt.Sprintf("hub/api/users/%s/servers/%s", username, serverName), body)
+	_, err = c.Request(http.MethodPost, fmt.Sprintf("users/%s/servers/%s", username, serverName), body)
 	if err != nil {
 		return err
 	}
@@ -279,7 +314,7 @@ func (c *ClientConfig) StartUserNamedServer(username string, serverName string, 
 }
 
 func (c *ClientConfig) StopUserNamedServer(username string, serverName string) error {
-	_, err := c.Request(http.MethodDelete, fmt.Sprintf("hub/api/users/%s/servers/%s", username, serverName), nil)
+	_, err := c.Request(http.MethodDelete, fmt.Sprintf("users/%s/servers/%s", username, serverName), nil)
 	if err != nil {
 		return err
 	}
@@ -287,7 +322,7 @@ func (c *ClientConfig) StopUserNamedServer(username string, serverName string) e
 }
 
 func (c *ClientConfig) ListUserTokens(username string) (*ListTokenResponse, error) {
-	data, err := c.Request(http.MethodGet, fmt.Sprintf("hub/api/users/%s/tokens", username), nil)
+	data, err := c.Request(http.MethodGet, fmt.Sprintf("users/%s/tokens", username), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -304,7 +339,7 @@ func (c *ClientConfig) CreateUserToken(username string, options *CreateUserToken
 	if err != nil {
 		return nil, err
 	}
-	data, err := c.Request(http.MethodPost, fmt.Sprintf("hub/api/users/%s/tokens", username), body)
+	data, err := c.Request(http.MethodPost, fmt.Sprintf("users/%s/tokens", username), body)
 	if err != nil {
 		return nil, err
 	}
@@ -317,7 +352,7 @@ func (c *ClientConfig) CreateUserToken(username string, options *CreateUserToken
 }
 
 func (c *ClientConfig) GetUserToken(username string, tokenId string) (*GetUserTokenResponse, error) {
-	data, err := c.Request(http.MethodGet, fmt.Sprintf("hub/api/users/%s/tokens/%s", username, tokenId), nil)
+	data, err := c.Request(http.MethodGet, fmt.Sprintf("users/%s/tokens/%s", username, tokenId), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -330,7 +365,7 @@ func (c *ClientConfig) GetUserToken(username string, tokenId string) (*GetUserTo
 }
 
 func (c *ClientConfig) DeleteUserToken(username string, tokenId string) error {
-	_, err := c.Request(http.MethodDelete, fmt.Sprintf("hub/api/users/%s/tokens/%s", username, tokenId), nil)
+	_, err := c.Request(http.MethodDelete, fmt.Sprintf("users/%s/tokens/%s", username, tokenId), nil)
 	if err != nil {
 		return err
 	}
@@ -338,7 +373,7 @@ func (c *ClientConfig) DeleteUserToken(username string, tokenId string) error {
 }
 
 func (c *ClientConfig) ListGroups(options *ListGroupsParams) (*ListGroupsResponse, error) {
-	url := "hub/api/groups"
+	url := "groups"
 	if options != nil {
 		url = fmt.Sprintf("%s?%s", url, options.Encode())
 	}
@@ -356,7 +391,7 @@ func (c *ClientConfig) ListGroups(options *ListGroupsParams) (*ListGroupsRespons
 }
 
 func (c *ClientConfig) GetGroup(groupname string) (*GetGroupResponse, error) {
-	data, err := c.Request(http.MethodGet, fmt.Sprintf("hub/api/groups/%s", groupname), nil)
+	data, err := c.Request(http.MethodGet, fmt.Sprintf("groups/%s", groupname), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -369,7 +404,7 @@ func (c *ClientConfig) GetGroup(groupname string) (*GetGroupResponse, error) {
 }
 
 func (c *ClientConfig) CreateGroup(groupname string) (*CreateGroupResponse, error) {
-	data, err := c.Request(http.MethodPost, fmt.Sprintf("hub/api/groups/%s", groupname), nil)
+	data, err := c.Request(http.MethodPost, fmt.Sprintf("groups/%s", groupname), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -382,7 +417,7 @@ func (c *ClientConfig) CreateGroup(groupname string) (*CreateGroupResponse, erro
 }
 
 func (c *ClientConfig) DeleteGroup(groupname string) error {
-	_, err := c.Request(http.MethodDelete, fmt.Sprintf("hub/api/groups/%s", groupname), nil)
+	_, err := c.Request(http.MethodDelete, fmt.Sprintf("groups/%s", groupname), nil)
 	if err != nil {
 		return err
 	}
@@ -394,7 +429,7 @@ func (c *ClientConfig) AddGroupUsers(groupname string, options *AddGroupUsersBod
 	if err != nil {
 		return nil, err
 	}
-	data, err := c.Request(http.MethodPost, fmt.Sprintf("hub/api/groups/%s/users", groupname), body)
+	data, err := c.Request(http.MethodPost, fmt.Sprintf("groups/%s/users", groupname), body)
 	if err != nil {
 		return nil, err
 	}
@@ -411,7 +446,7 @@ func (c *ClientConfig) RemoveGroupUsers(groupname string, options *RemoveGroupUs
 	if err != nil {
 		return err
 	}
-	_, err = c.Request(http.MethodDelete, fmt.Sprintf("hub/api/groups/%s/users", groupname), body)
+	_, err = c.Request(http.MethodDelete, fmt.Sprintf("groups/%s/users", groupname), body)
 	if err != nil {
 		return err
 	}
@@ -423,7 +458,7 @@ func (c *ClientConfig) SetGroupProperties(groupname string, properties interface
 	if err != nil {
 		return err
 	}
-	_, err = c.Request(http.MethodPut, fmt.Sprintf("hub/api/groups/%s/properties", groupname), body)
+	_, err = c.Request(http.MethodPut, fmt.Sprintf("groups/%s/properties", groupname), body)
 	if err != nil {
 		return err
 	}
@@ -431,7 +466,7 @@ func (c *ClientConfig) SetGroupProperties(groupname string, properties interface
 }
 
 func (c *ClientConfig) ListServices() (*ListServicesResponse, error) {
-	data, err := c.Request(http.MethodGet, "hub/api/services", nil)
+	data, err := c.Request(http.MethodGet, "services", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -444,7 +479,7 @@ func (c *ClientConfig) ListServices() (*ListServicesResponse, error) {
 }
 
 func (c *ClientConfig) GetService(servicename string) (*GetServiceResponse, error) {
-	data, err := c.Request(http.MethodGet, fmt.Sprintf("hub/api/services/%s", servicename), nil)
+	data, err := c.Request(http.MethodGet, fmt.Sprintf("services/%s", servicename), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -457,7 +492,7 @@ func (c *ClientConfig) GetService(servicename string) (*GetServiceResponse, erro
 }
 
 func (c *ClientConfig) GetProxyTable(options *GetProxyTableParams) (*GetProxyTableResponse, error) {
-	url := "hub/api/proxy"
+	url := "proxy"
 	if options != nil {
 		url = fmt.Sprintf("%s?%s", url, options.Encode())
 	}
@@ -475,7 +510,7 @@ func (c *ClientConfig) GetProxyTable(options *GetProxyTableParams) (*GetProxyTab
 }
 
 func (c *ClientConfig) ForceProxySync() error {
-	_, err := c.Request(http.MethodPost, "hub/api/proxy", nil)
+	_, err := c.Request(http.MethodPost, "proxy", nil)
 	if err != nil {
 		return err
 	}
@@ -487,7 +522,7 @@ func (c *ClientConfig) NotifyNewProxy(options *NotifyNewProxyBody) error {
 	if err != nil {
 		return err
 	}
-	_, err = c.Request(http.MethodPost, "hub/api/proxy", body)
+	_, err = c.Request(http.MethodPost, "proxy", body)
 	if err != nil {
 		return err
 	}
@@ -499,7 +534,7 @@ func (c *ClientConfig) NewAPIToken(options *NewTokenBody) (*NewTokenResponse, er
 	if err != nil {
 		return nil, err
 	}
-	data, err := c.Request(http.MethodPost, "hub/api/authorizations/token", body)
+	data, err := c.Request(http.MethodPost, "authorizations/token", body)
 	if err != nil {
 		return nil, err
 	}
@@ -511,18 +546,58 @@ func (c *ClientConfig) NewAPIToken(options *NewTokenBody) (*NewTokenResponse, er
 }
 
 func (c *ClientConfig) ValidateToken(token string) error {
-	_, err := c.Request(http.MethodGet, fmt.Sprintf("hub/api/authorizations/token/%s", token), nil)
+	_, err := c.Request(http.MethodGet, fmt.Sprintf("authorizations/token/%s", token), nil)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *ClientConfig) GetOAuth2Endpoint(options *GetOAuth2EndpointParams) string {
-	return fmt.Sprintf("%s/oauth2/authorize?%s", c.BaseURL(), options.Encode())
+func (c *ClientConfig) GetOAuth2Endpoint(options *GetOAuth2EndpointParams) (string, error) {
+	if options.ClientId == "" && c.ServiceName != "" {
+		options.ClientId = c.ServiceName
+	} else {
+		return "", errors.New("ClientId not set via options or environment variable JUPYTERHUB_SERVICE_NAME")
+	}
+
+	if options.ResponseType == "" {
+		options.ResponseType = "code"
+	}
+
+	if options.State == "" {
+		return "", errors.New("state not set for OAuth request and is required")
+	}
+
+	if options.RedirectUri == "" {
+		return "", errors.New("RedirectUri not set for OAuth request and is required")
+	}
+
+	return fmt.Sprintf("%s/oauth2/authorize?%s", c.ApiURL, options.Encode()), nil
+}
+
+func (c *ClientConfig) ParseOAuthRequest(r *http.Request, state string) (string, error) {
+	query := r.URL.Query()
+	if state != query.Get("state") {
+		return "", errors.New("state of request did not match expected state")
+	}
+	return query.Get("code"), nil
 }
 
 func (c *ClientConfig) GetOAuth2Token(options *GetOAuth2TokenBody) (*GetOAuth2TokenResponse, error) {
+	if options.ClientId == "" && c.ServiceName != "" {
+		options.ClientId = c.ServiceName
+	} else {
+		return nil, errors.New("ClientId not set via options or environment variable JUPYTERHUB_SERVICE_NAME")
+	}
+
+	if options.ClientSecret == "" {
+		options.ClientSecret = c.ApiToken
+	}
+
+	if options.GrantType == "" {
+		options.GrantType = "authorization_code"
+	}
+
 	body, err := json.Marshal(options)
 	if err != nil {
 		return nil, err

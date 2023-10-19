@@ -13,12 +13,15 @@ const (
 )
 
 type ClientConfig struct {
-	Host     string
-	Prefix   string
-	Token    string
-	Protocol string
-	Username string
-	Password string
+	ApiToken                 string
+	ServiceName              string
+	ApiURL                   string
+	BaseURL                  string
+	ServicePrefix            string
+	ServiceURL               string
+	OAuthScopes              []string
+	OAuthAccessScopes        []string
+	OAuthClientAllowedScopes []string
 }
 
 type VersionResponse struct {
@@ -245,6 +248,7 @@ type GetOAuth2EndpointParams struct {
 	ResponseType string
 	State        string
 	RedirectUri  string
+	Scope        string
 }
 
 func (p *GetOAuth2EndpointParams) Encode() string {
@@ -253,6 +257,9 @@ func (p *GetOAuth2EndpointParams) Encode() string {
 	v.Set("response_type", p.ResponseType)
 	v.Set("state", p.State)
 	v.Set("redirect_uri", p.RedirectUri)
+	if p.Scope != "" {
+		v.Set("scope", p.Scope)
+	}
 	return v.Encode()
 }
 
