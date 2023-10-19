@@ -611,7 +611,7 @@ func (c *ClientConfig) GetOAuth2Token(options *GetOAuth2TokenBody) (*GetOAuth2To
 	if err != nil {
 		return nil, err
 	}
-	data, err := c.Request(http.MethodPost, "hub/api/oauth2/token", body)
+	data, err := c.Request(http.MethodPost, "oauth2/token", body)
 	if err != nil {
 		return nil, err
 	}
@@ -627,7 +627,7 @@ func (c *ClientConfig) Shutdown(options *ShutdownBody) error {
 	if err != nil {
 		return err
 	}
-	_, err = c.Request(http.MethodPost, "hub/api/shutdown", body)
+	_, err = c.Request(http.MethodPost, "shutdown", body)
 	if err != nil {
 		return err
 	}
