@@ -593,10 +593,12 @@ func (c *ClientConfig) ParseOAuthRequest(r *http.Request, state string) (string,
 }
 
 func (c *ClientConfig) GetOAuth2Token(options *GetOAuth2TokenBody) (*GetOAuth2TokenResponse, error) {
-	if options.ClientId == "" && c.ServiceName != "" {
-		options.ClientId = c.ServiceName
-	} else {
-		return nil, errors.New("ClientId not set via options or environment variable JUPYTERHUB_SERVICE_NAME")
+	if options.ClientId == "" && c.ClientId != "" {
+		options.ClientId = c.ClientId
+	} else if options.ClientId == "" && c.ServiceName != "" {
+		options.ClientId = fmt.Sprintf("service-%s", c.ServiceName)
+	} else if options.ClientId == "" {
+		return nil, errors.New("ClientId not set via options or environment variable JUPYTERHUB_CLIENT_ID or JUPYTERHUB_SERVICE_NAME")
 	}
 
 	if options.ClientSecret == "" {
