@@ -272,6 +272,16 @@ type GetOAuth2TokenBody struct {
 	RedirectUri  string `json:"redirect_uri"`
 }
 
+func (p *GetOAuth2TokenBody) Encode() string {
+	v := url.Values{}
+	v.Set("client_id", p.ClientId)
+	v.Set("client_secret", p.ClientSecret)
+	v.Set("grant_type", p.GrantType)
+	v.Set("code", p.Code)
+	v.Set("redirect_uri", p.RedirectUri)
+	return v.Encode()
+}
+
 type GetOAuth2TokenResponse struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type"`

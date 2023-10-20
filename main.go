@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	client, err := api.CreateClient(&api.ClientConfig{ApiToken: "af07ebb6bf2140cbb0e857ef902242e0"})
+	client, err := api.CreateClient(&api.ClientConfig{ApiToken: "d92fb08258574bc0b27aed7b6883e370"})
 	if err != nil {
 		panic(err.Error())
 	}

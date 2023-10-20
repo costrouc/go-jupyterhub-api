@@ -121,7 +121,7 @@ func CreateClient(config *ClientConfig) (*ClientConfig, error) {
 	return &clientConfig, nil
 }
 
-func (c *ClientConfig) Request(method string, path string, requestBody []byte) ([]byte, error) {
+func (c *ClientConfig) Request(method string, path string, contentType string, requestBody []byte) ([]byte, error) {
 	url := fmt.Sprintf("%s/%s", c.ApiURL, path)
 	client := &http.Client{}
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(requestBody))
@@ -129,7 +129,7 @@ func (c *ClientConfig) Request(method string, path string, requestBody []byte) (
 		return nil, err
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.ApiToken))
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", contentType)
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -148,7 +148,7 @@ func (c *ClientConfig) Request(method string, path string, requestBody []byte) (
 }
 
 func (c *ClientConfig) GetInfo() (*InfoResponse, error) {
-	data, err := c.Request(http.MethodGet, "info", nil)
+	data, err := c.Request(http.MethodGet, "info", "application/json", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +161,7 @@ func (c *ClientConfig) GetInfo() (*InfoResponse, error) {
 }
 
 func (c *ClientConfig) GetVersion() (*VersionResponse, error) {
-	data, err := c.Request(http.MethodGet, "", nil)
+	data, err := c.Request(http.MethodGet, "", "application/json", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +174,7 @@ func (c *ClientConfig) GetVersion() (*VersionResponse, error) {
 }
 
 func (c *ClientConfig) GetCurrentUser() (*CurrentUserResponse, error) {
-	data, err := c.Request(http.MethodGet, "user", nil)
+	data, err := c.Request(http.MethodGet, "user", "application/json", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +192,7 @@ func (c *ClientConfig) ListUsers(options *ListUsersParams) (*ListUsersResponse, 
 		url = fmt.Sprintf("%s?%s", url, options.Encode())
 	}
 
-	data, err := c.Request(http.MethodGet, url, nil)
+	data, err := c.Request(http.MethodGet, url, "application/json", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +209,7 @@ func (c *ClientConfig) CreateUsers(options *CreateUsersBody) (*ListUsersResponse
 	if err != nil {
 		return nil, err
 	}
-	data, err := c.Request(http.MethodPost, "users", body)
+	data, err := c.Request(http.MethodPost, "users", "application/json", body)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +222,7 @@ func (c *ClientConfig) CreateUsers(options *CreateUsersBody) (*ListUsersResponse
 }
 
 func (c *ClientConfig) GetUser(username string) (*GetUserResponse, error) {
-	data, err := c.Request(http.MethodGet, fmt.Sprintf("users/%s", username), nil)
+	data, err := c.Request(http.MethodGet, fmt.Sprintf("users/%s", username), "application/json", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -235,7 +235,7 @@ func (c *ClientConfig) GetUser(username string) (*GetUserResponse, error) {
 }
 
 func (c *ClientConfig) CreateUser(username string) (*CreateUserResponse, error) {
-	data, err := c.Request(http.MethodPost, fmt.Sprintf("users/%s", username), nil)
+	data, err := c.Request(http.MethodPost, fmt.Sprintf("users/%s", username), "application/json", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +248,7 @@ func (c *ClientConfig) CreateUser(username string) (*CreateUserResponse, error) 
 }
 
 func (c *ClientConfig) DeleteUser(username string) error {
-	_, err := c.Request(http.MethodDelete, fmt.Sprintf("users/%s", username), nil)
+	_, err := c.Request(http.MethodDelete, fmt.Sprintf("users/%s", username), "application/json", nil)
 	if err != nil {
 		return err
 	}
@@ -261,7 +261,7 @@ func (c *ClientConfig) UpdateUser(username string, options *UpdateUserBody) (*Up
 		return nil, err
 	}
 
-	data, err := c.Request(http.MethodPatch, fmt.Sprintf("users/%s", username), body)
+	data, err := c.Request(http.MethodPatch, fmt.Sprintf("users/%s", username), "application/json", body)
 	if err != nil {
 		return nil, err
 	}
@@ -279,7 +279,7 @@ func (c *ClientConfig) NotifyUserActivity(username string, options *UserActivity
 		return err
 	}
 
-	_, err = c.Request(http.MethodPost, fmt.Sprintf("users/%s/activity", username), body)
+	_, err = c.Request(http.MethodPost, fmt.Sprintf("users/%s/activity", username), "application/json", body)
 	if err != nil {
 		return err
 	}
@@ -292,7 +292,7 @@ func (c *ClientConfig) StartUserServer(username string, options interface{}) err
 		return err
 	}
 
-	_, err = c.Request(http.MethodPost, fmt.Sprintf("users/%s/server", username), body)
+	_, err = c.Request(http.MethodPost, fmt.Sprintf("users/%s/server", username), "application/json", body)
 	if err != nil {
 		return err
 	}
@@ -300,7 +300,7 @@ func (c *ClientConfig) StartUserServer(username string, options interface{}) err
 }
 
 func (c *ClientConfig) StopUserServer(username string) error {
-	_, err := c.Request(http.MethodDelete, fmt.Sprintf("users/%s/server", username), nil)
+	_, err := c.Request(http.MethodDelete, fmt.Sprintf("users/%s/server", username), "application/json", nil)
 	if err != nil {
 		return err
 	}
@@ -313,7 +313,7 @@ func (c *ClientConfig) StartUserNamedServer(username string, serverName string, 
 		return err
 	}
 
-	_, err = c.Request(http.MethodPost, fmt.Sprintf("users/%s/servers/%s", username, serverName), body)
+	_, err = c.Request(http.MethodPost, fmt.Sprintf("users/%s/servers/%s", username, serverName), "application/json", body)
 	if err != nil {
 		return err
 	}
@@ -321,7 +321,7 @@ func (c *ClientConfig) StartUserNamedServer(username string, serverName string, 
 }
 
 func (c *ClientConfig) StopUserNamedServer(username string, serverName string) error {
-	_, err := c.Request(http.MethodDelete, fmt.Sprintf("users/%s/servers/%s", username, serverName), nil)
+	_, err := c.Request(http.MethodDelete, fmt.Sprintf("users/%s/servers/%s", username, serverName), "application/json", nil)
 	if err != nil {
 		return err
 	}
@@ -329,7 +329,7 @@ func (c *ClientConfig) StopUserNamedServer(username string, serverName string) e
 }
 
 func (c *ClientConfig) ListUserTokens(username string) (*ListTokenResponse, error) {
-	data, err := c.Request(http.MethodGet, fmt.Sprintf("users/%s/tokens", username), nil)
+	data, err := c.Request(http.MethodGet, fmt.Sprintf("users/%s/tokens", username), "application/json", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -346,7 +346,7 @@ func (c *ClientConfig) CreateUserToken(username string, options *CreateUserToken
 	if err != nil {
 		return nil, err
 	}
-	data, err := c.Request(http.MethodPost, fmt.Sprintf("users/%s/tokens", username), body)
+	data, err := c.Request(http.MethodPost, fmt.Sprintf("users/%s/tokens", username), "application/json", body)
 	if err != nil {
 		return nil, err
 	}
@@ -359,7 +359,7 @@ func (c *ClientConfig) CreateUserToken(username string, options *CreateUserToken
 }
 
 func (c *ClientConfig) GetUserToken(username string, tokenId string) (*GetUserTokenResponse, error) {
-	data, err := c.Request(http.MethodGet, fmt.Sprintf("users/%s/tokens/%s", username, tokenId), nil)
+	data, err := c.Request(http.MethodGet, fmt.Sprintf("users/%s/tokens/%s", username, tokenId), "application/json", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -372,7 +372,7 @@ func (c *ClientConfig) GetUserToken(username string, tokenId string) (*GetUserTo
 }
 
 func (c *ClientConfig) DeleteUserToken(username string, tokenId string) error {
-	_, err := c.Request(http.MethodDelete, fmt.Sprintf("users/%s/tokens/%s", username, tokenId), nil)
+	_, err := c.Request(http.MethodDelete, fmt.Sprintf("users/%s/tokens/%s", username, tokenId), "application/json", nil)
 	if err != nil {
 		return err
 	}
@@ -385,7 +385,7 @@ func (c *ClientConfig) ListGroups(options *ListGroupsParams) (*ListGroupsRespons
 		url = fmt.Sprintf("%s?%s", url, options.Encode())
 	}
 
-	data, err := c.Request(http.MethodGet, url, nil)
+	data, err := c.Request(http.MethodGet, url, "application/json", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -398,7 +398,7 @@ func (c *ClientConfig) ListGroups(options *ListGroupsParams) (*ListGroupsRespons
 }
 
 func (c *ClientConfig) GetGroup(groupname string) (*GetGroupResponse, error) {
-	data, err := c.Request(http.MethodGet, fmt.Sprintf("groups/%s", groupname), nil)
+	data, err := c.Request(http.MethodGet, fmt.Sprintf("groups/%s", groupname), "application/json", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -411,7 +411,7 @@ func (c *ClientConfig) GetGroup(groupname string) (*GetGroupResponse, error) {
 }
 
 func (c *ClientConfig) CreateGroup(groupname string) (*CreateGroupResponse, error) {
-	data, err := c.Request(http.MethodPost, fmt.Sprintf("groups/%s", groupname), nil)
+	data, err := c.Request(http.MethodPost, fmt.Sprintf("groups/%s", groupname), "application/json", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -424,7 +424,7 @@ func (c *ClientConfig) CreateGroup(groupname string) (*CreateGroupResponse, erro
 }
 
 func (c *ClientConfig) DeleteGroup(groupname string) error {
-	_, err := c.Request(http.MethodDelete, fmt.Sprintf("groups/%s", groupname), nil)
+	_, err := c.Request(http.MethodDelete, fmt.Sprintf("groups/%s", groupname), "application/json", nil)
 	if err != nil {
 		return err
 	}
@@ -436,7 +436,7 @@ func (c *ClientConfig) AddGroupUsers(groupname string, options *AddGroupUsersBod
 	if err != nil {
 		return nil, err
 	}
-	data, err := c.Request(http.MethodPost, fmt.Sprintf("groups/%s/users", groupname), body)
+	data, err := c.Request(http.MethodPost, fmt.Sprintf("groups/%s/users", groupname), "application/json", body)
 	if err != nil {
 		return nil, err
 	}
@@ -453,7 +453,7 @@ func (c *ClientConfig) RemoveGroupUsers(groupname string, options *RemoveGroupUs
 	if err != nil {
 		return err
 	}
-	_, err = c.Request(http.MethodDelete, fmt.Sprintf("groups/%s/users", groupname), body)
+	_, err = c.Request(http.MethodDelete, fmt.Sprintf("groups/%s/users", groupname), "application/json", body)
 	if err != nil {
 		return err
 	}
@@ -465,7 +465,7 @@ func (c *ClientConfig) SetGroupProperties(groupname string, properties interface
 	if err != nil {
 		return err
 	}
-	_, err = c.Request(http.MethodPut, fmt.Sprintf("groups/%s/properties", groupname), body)
+	_, err = c.Request(http.MethodPut, fmt.Sprintf("groups/%s/properties", groupname), "application/json", body)
 	if err != nil {
 		return err
 	}
@@ -473,7 +473,7 @@ func (c *ClientConfig) SetGroupProperties(groupname string, properties interface
 }
 
 func (c *ClientConfig) ListServices() (*ListServicesResponse, error) {
-	data, err := c.Request(http.MethodGet, "services", nil)
+	data, err := c.Request(http.MethodGet, "services", "application/json", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -486,7 +486,7 @@ func (c *ClientConfig) ListServices() (*ListServicesResponse, error) {
 }
 
 func (c *ClientConfig) GetService(servicename string) (*GetServiceResponse, error) {
-	data, err := c.Request(http.MethodGet, fmt.Sprintf("services/%s", servicename), nil)
+	data, err := c.Request(http.MethodGet, fmt.Sprintf("services/%s", servicename), "application/json", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -504,7 +504,7 @@ func (c *ClientConfig) GetProxyTable(options *GetProxyTableParams) (*GetProxyTab
 		url = fmt.Sprintf("%s?%s", url, options.Encode())
 	}
 
-	data, err := c.Request(http.MethodGet, url, nil)
+	data, err := c.Request(http.MethodGet, url, "application/json", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -517,7 +517,7 @@ func (c *ClientConfig) GetProxyTable(options *GetProxyTableParams) (*GetProxyTab
 }
 
 func (c *ClientConfig) ForceProxySync() error {
-	_, err := c.Request(http.MethodPost, "proxy", nil)
+	_, err := c.Request(http.MethodPost, "proxy", "application/json", nil)
 	if err != nil {
 		return err
 	}
@@ -529,7 +529,7 @@ func (c *ClientConfig) NotifyNewProxy(options *NotifyNewProxyBody) error {
 	if err != nil {
 		return err
 	}
-	_, err = c.Request(http.MethodPost, "proxy", body)
+	_, err = c.Request(http.MethodPost, "proxy", "application/json", body)
 	if err != nil {
 		return err
 	}
@@ -541,7 +541,7 @@ func (c *ClientConfig) NewAPIToken(options *NewTokenBody) (*NewTokenResponse, er
 	if err != nil {
 		return nil, err
 	}
-	data, err := c.Request(http.MethodPost, "authorizations/token", body)
+	data, err := c.Request(http.MethodPost, "authorizations/token", "application/json", body)
 	if err != nil {
 		return nil, err
 	}
@@ -553,7 +553,7 @@ func (c *ClientConfig) NewAPIToken(options *NewTokenBody) (*NewTokenResponse, er
 }
 
 func (c *ClientConfig) ValidateToken(token string) error {
-	_, err := c.Request(http.MethodGet, fmt.Sprintf("authorizations/token/%s", token), nil)
+	_, err := c.Request(http.MethodGet, fmt.Sprintf("authorizations/token/%s", token), "application/json", nil)
 	if err != nil {
 		return err
 	}
@@ -607,11 +607,7 @@ func (c *ClientConfig) GetOAuth2Token(options *GetOAuth2TokenBody) (*GetOAuth2To
 		options.GrantType = "authorization_code"
 	}
 
-	body, err := json.Marshal(options)
-	if err != nil {
-		return nil, err
-	}
-	data, err := c.Request(http.MethodPost, "oauth2/token", body)
+	data, err := c.Request(http.MethodPost, "oauth2/token", "application/x-www-form-urlencoded", []byte(options.Encode()))
 	if err != nil {
 		return nil, err
 	}
@@ -627,7 +623,7 @@ func (c *ClientConfig) Shutdown(options *ShutdownBody) error {
 	if err != nil {
 		return err
 	}
-	_, err = c.Request(http.MethodPost, "shutdown", body)
+	_, err = c.Request(http.MethodPost, "shutdown", "application/json", body)
 	if err != nil {
 		return err
 	}
