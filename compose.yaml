@@ -2,12 +2,11 @@ version: "3"
 
 services:
   jupyterhub:
-    image: jupyterhub/jupyterhub
+    build: .
+    volumes:
+     - ./config/jupyterhub_config.py:/home/jupyter/jupyterhub_config.py
     command:
      - "jupyterhub"
-     - "--JupyterHub.authenticator_class=jupyterhub.auth.DummyAuthenticator"
-     - "--JupyterHub.spawner_class=jupyterhub.spawner.SimpleLocalProcessSpawner"
-     - "--DummyAuthenticator.password=password"
-     - "--Authenticator.admin_users=[\"username\"]"
+     - "--config=jupyterhub_config.py"
     ports:
       - "8000:8000"
